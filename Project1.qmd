@@ -7,23 +7,8 @@ execute:
 editor: visual
 ---
 
-## Quarto
+## Approach Deliverable
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+### Overview
 
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
+For Project 1, I started by examining the tournament results in the text file. The file contains unstructured data. My plan is to extract the player information, including Player’s Name, Player’s State, Total Number of Points, and Player’s Pre-Rating. Then, using the opponent numbers listed for each player, identify who they played and match those players to their pre-tournament ratings. I will use this information to calculate the average pre-rating of each player's opponents and combine everything into a data frame that can be exported as a CSV file.
