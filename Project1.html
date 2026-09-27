@@ -24,6 +24,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -78,6 +113,341 @@ ul.task-list li input[type="checkbox"] {
 <section id="overview" class="level3">
 <h3 class="anchored" data-anchor-id="overview">Overview</h3>
 <p>For Project 1, I started by examining the tournament results in the text file. The file contains unstructured data. My plan is to extract the player information, including Player’s Name, Player’s State, Total Number of Points, and Player’s Pre-Rating. Then, using the opponent numbers listed for each player, identify who they played and match those players to their pre-tournament ratings. I will use this information to calculate the average pre-rating of each player’s opponents and combine everything into a data frame that can be exported as a CSV file.</p>
+</section>
+</section>
+<section id="code-base-deliverable" class="level2">
+<h2 class="anchored" data-anchor-id="code-base-deliverable">Code Base Deliverable</h2>
+<section id="load-library" class="level3">
+<h3 class="anchored" data-anchor-id="load-library">Load library</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+</div>
+<p>Because I saw the unstructured txt file beforehand, I decided this was probably the better way to look into it using R</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>lines <span class="ot">&lt;-</span> <span class="fu">readLines</span>(<span class="st">"tournamentinfo.txt"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in readLines("tournamentinfo.txt"): incomplete final line found on
+'tournamentinfo.txt'</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(lines)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "-----------------------------------------------------------------------------------------" 
+[2] " Pair | Player Name                     |Total|Round|Round|Round|Round|Round|Round|Round| "
+[3] " Num  | USCF ID / Rtg (Pre-&gt;Post)       | Pts |  1  |  2  |  3  |  4  |  5  |  6  |  7  | "
+[4] "-----------------------------------------------------------------------------------------" 
+[5] "    1 | GARY HUA                        |6.0  |W  39|W  21|W  18|W  14|W   7|D  12|D   4|" 
+[6] "   ON | 15445895 / R: 1794   -&gt;1817     |N:2  |W    |B    |W    |B    |W    |B    |W    |" </code></pre>
+</div>
+</div>
+<p>My approach with this file was to extract the information one piece at a time. I started with the player names by splitting each line at the | symbol and taking the second piece, which contains the name.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>first_lines <span class="ot">&lt;-</span> lines[<span class="fu">grepl</span>(<span class="st">"^</span><span class="sc">\\</span><span class="st">s*</span><span class="sc">\\</span><span class="st">d+</span><span class="sc">\\</span><span class="st">s*</span><span class="sc">\\</span><span class="st">|"</span>, lines)]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(first_lines)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "    1 | GARY HUA                        |6.0  |W  39|W  21|W  18|W  14|W   7|D  12|D   4|"
+[2] "    2 | DAKSHESH DARURI                 |6.0  |W  63|W  58|L   4|W  17|W  16|W  20|W   7|"
+[3] "    3 | ADITYA BAJAJ                    |6.0  |L   8|W  61|W  25|W  21|W  11|W  13|W  12|"
+[4] "    4 | PATRICK H SCHILLING             |5.5  |W  23|D  28|W   2|W  26|D   5|W  19|D   1|"
+[5] "    5 | HANSHI ZUO                      |5.5  |W  45|W  37|D  12|D  13|D   4|W  14|W  17|"
+[6] "    6 | HANSEN SONG                     |5.0  |W  34|D  29|L  11|W  35|D  10|W  27|W  21|"</code></pre>
+</div>
+</div>
+<p>I then removed the extra spaces.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>name <span class="ot">&lt;-</span> <span class="fu">trimws</span>(<span class="fu">sapply</span>(<span class="fu">strsplit</span>(first_lines, <span class="st">"</span><span class="sc">\\</span><span class="st">|"</span>), <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">2</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "GARY HUA"                   "DAKSHESH DARURI"           
+ [3] "ADITYA BAJAJ"               "PATRICK H SCHILLING"       
+ [5] "HANSHI ZUO"                 "HANSEN SONG"               
+ [7] "GARY DEE SWATHELL"          "EZEKIEL HOUGHTON"          
+ [9] "STEFANO LEE"                "ANVIT RAO"                 
+[11] "CAMERON WILLIAM MC LEMAN"   "KENNETH J TACK"            
+[13] "TORRANCE HENRY JR"          "BRADLEY SHAW"              
+[15] "ZACHARY JAMES HOUGHTON"     "MIKE NIKITIN"              
+[17] "RONALD GRZEGORCZYK"         "DAVID SUNDEEN"             
+[19] "DIPANKAR ROY"               "JASON ZHENG"               
+[21] "DINH DANG BUI"              "EUGENE L MCCLURE"          
+[23] "ALAN BUI"                   "MICHAEL R ALDRICH"         
+[25] "LOREN SCHWIEBERT"           "MAX ZHU"                   
+[27] "GAURAV GIDWANI"             "SOFIA ADINA STANESCU-BELLU"
+[29] "CHIEDOZIE OKORIE"           "GEORGE AVERY JONES"        
+[31] "RISHI SHETTY"               "JOSHUA PHILIP MATHEWS"     
+[33] "JADE GE"                    "MICHAEL JEFFERY THOMAS"    
+[35] "JOSHUA DAVID LEE"           "SIDDHARTH JHA"             
+[37] "AMIYATOSH PWNANANDAM"       "BRIAN LIU"                 
+[39] "JOEL R HENDON"              "FOREST ZHANG"              
+[41] "KYLE WILLIAM MURPHY"        "JARED GE"                  
+[43] "ROBERT GLEN VASEY"          "JUSTIN D SCHILLING"        
+[45] "DEREK YAN"                  "JACOB ALEXANDER LAVALLEY"  
+[47] "ERIC WRIGHT"                "DANIEL KHAIN"              
+[49] "MICHAEL J MARTIN"           "SHIVAM JHA"                
+[51] "TEJAS AYYAGARI"             "ETHAN GUO"                 
+[53] "JOSE C YBARRA"              "LARRY HODGE"               
+[55] "ALEX KONG"                  "MARISA RICCI"              
+[57] "MICHAEL LU"                 "VIRAJ MOHILE"              
+[59] "SEAN M MC CORMICK"          "JULIA SHEN"                
+[61] "JEZZEL FARKAS"              "ASHWIN BALAJI"             
+[63] "THOMAS JOSEPH HOSMER"       "BEN LI"                    </code></pre>
+</div>
+</div>
+<p>I stored the player names in a new data frame called players.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>players <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">name =</span> name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This way of isolating the values needed worked, so I will replicate for the other columns.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(players)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 name
+1            GARY HUA
+2     DAKSHESH DARURI
+3        ADITYA BAJAJ
+4 PATRICK H SCHILLING
+5          HANSHI ZUO
+6         HANSEN SONG</code></pre>
+</div>
+</div>
+<p>Next, I extracted the players’ states. I used grepl() to identify the lines that start with a two-letter state abbreviation, such as ON or MI.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>second_lines <span class="ot">&lt;-</span> lines[<span class="fu">grepl</span>(<span class="st">"^</span><span class="sc">\\</span><span class="st">s*[A-Z]{2}</span><span class="sc">\\</span><span class="st">s*</span><span class="sc">\\</span><span class="st">|"</span>, lines)]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(second_lines)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "   ON | 15445895 / R: 1794   -&gt;1817     |N:2  |W    |B    |W    |B    |W    |B    |W    |"
+[2] "   MI | 14598900 / R: 1553   -&gt;1663     |N:2  |B    |W    |B    |W    |B    |W    |B    |"
+[3] "   MI | 14959604 / R: 1384   -&gt;1640     |N:2  |W    |B    |W    |B    |W    |B    |W    |"
+[4] "   MI | 12616049 / R: 1716   -&gt;1744     |N:2  |W    |B    |W    |B    |W    |B    |B    |"
+[5] "   MI | 14601533 / R: 1655   -&gt;1690     |N:2  |B    |W    |B    |W    |B    |W    |B    |"
+[6] "   OH | 15055204 / R: 1686   -&gt;1687     |N:3  |W    |B    |W    |B    |B    |W    |B    |"</code></pre>
+</div>
+</div>
+<p>I then split those lines at the | symbol and took the first piece to create the state column.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>state <span class="ot">&lt;-</span> <span class="fu">trimws</span>(<span class="fu">sapply</span>(<span class="fu">strsplit</span>(second_lines, <span class="st">"</span><span class="sc">\\</span><span class="st">|"</span>), <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">1</span>))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(state)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "ON" "MI" "MI" "MI" "MI" "OH" "MI" "MI" "ON" "MI" "MI" "MI" "MI" "MI" "MI"
+[16] "MI" "MI" "MI" "MI" "MI" "ON" "MI" "ON" "MI" "MI" "ON" "MI" "MI" "MI" "ON"
+[31] "MI" "ON" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI"
+[46] "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI" "MI"
+[61] "ON" "MI" "MI" "MI"</code></pre>
+</div>
+</div>
+<p>I stored the player states in a the data frame</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>players<span class="sc">$</span>state <span class="ot">&lt;-</span> state</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>I then extracted the total points for each player. I split each player line at the | symbol and took the third piece, which contains the player’s total points. I removed the extra spaces and converted the values from text to numbers.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>points <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">trimws</span>(<span class="fu">sapply</span>(<span class="fu">strsplit</span>(first_lines, <span class="st">"</span><span class="sc">\\</span><span class="st">|"</span>), <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">3</span>)))</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(points)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 6.0 6.0 6.0 5.5 5.5 5.0 5.0 5.0 5.0 5.0 4.5 4.5 4.5 4.5 4.5 4.0 4.0 4.0 4.0
+[20] 4.0 4.0 4.0 4.0 4.0 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.5 3.0
+[39] 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 2.5 2.5 2.5 2.5 2.5 2.5 2.0 2.0 2.0 2.0 2.0
+[58] 2.0 2.0 1.5 1.5 1.0 1.0 1.0</code></pre>
+</div>
+</div>
+<p>I stored the player points in a the data frame</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>players<span class="sc">$</span>points <span class="ot">&lt;-</span> points</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>I split each rating line at R:. This separates the information before the rating from the rating and post-tournament rating that comes after it.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>rating_parts <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(second_lines, <span class="st">"R:"</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(rating_parts)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+[1] "   ON | 15445895 / "                                                 
+[2] " 1794   -&gt;1817     |N:2  |W    |B    |W    |B    |W    |B    |W    |"
+
+[[2]]
+[1] "   MI | 14598900 / "                                                 
+[2] " 1553   -&gt;1663     |N:2  |B    |W    |B    |W    |B    |W    |B    |"
+
+[[3]]
+[1] "   MI | 14959604 / "                                                 
+[2] " 1384   -&gt;1640     |N:2  |W    |B    |W    |B    |W    |B    |W    |"
+
+[[4]]
+[1] "   MI | 12616049 / "                                                 
+[2] " 1716   -&gt;1744     |N:2  |W    |B    |W    |B    |W    |B    |B    |"
+
+[[5]]
+[1] "   MI | 14601533 / "                                                 
+[2] " 1655   -&gt;1690     |N:2  |B    |W    |B    |W    |B    |W    |B    |"
+
+[[6]]
+[1] "   OH | 15055204 / "                                                 
+[2] " 1686   -&gt;1687     |N:3  |W    |B    |W    |B    |B    |W    |B    |"</code></pre>
+</div>
+</div>
+<p>I used sapply() to take the second piece from each split line. This gives me the pre- and post-tournament ratings.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>pre_rating <span class="ot">&lt;-</span> <span class="fu">sapply</span>(rating_parts, <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">2</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pre_rating)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] " 1794   -&gt;1817     |N:2  |W    |B    |W    |B    |W    |B    |W    |"
+[2] " 1553   -&gt;1663     |N:2  |B    |W    |B    |W    |B    |W    |B    |"
+[3] " 1384   -&gt;1640     |N:2  |W    |B    |W    |B    |W    |B    |W    |"
+[4] " 1716   -&gt;1744     |N:2  |W    |B    |W    |B    |W    |B    |B    |"
+[5] " 1655   -&gt;1690     |N:2  |B    |W    |B    |W    |B    |W    |B    |"
+[6] " 1686   -&gt;1687     |N:3  |W    |B    |W    |B    |B    |W    |B    |"</code></pre>
+</div>
+</div>
+<p>I then split the ratings at -&gt; and took the first piece, which is the player’s pre-tournament rating.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>pre_rating <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">strsplit</span>(pre_rating, <span class="st">"-&gt;"</span>), <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">1</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(pre_rating)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] " 1794   " " 1553   " " 1384   " " 1716   " " 1655   " " 1686   "
+ [7] " 1649   " " 1641P17" " 1411   " " 1365   " " 1712   " " 1663   "
+[13] " 1666   " " 1610   " " 1220P13" " 1604   " " 1629   " " 1600   "
+[19] " 1564   " " 1595   " " 1563P22" " 1555   " " 1363   " " 1229   "
+[25] " 1745   " " 1579   " " 1552   " " 1507   " " 1602P6 " " 1522   "
+[31] " 1494   " " 1441   " " 1449   " " 1399   " " 1438   " " 1355   "
+[37] "  980P12" " 1423   " " 1436P23" " 1348   " " 1403P5 " " 1332   "
+[43] " 1283   " " 1199   " " 1242   " "  377P3 " " 1362   " " 1382   "
+[49] " 1291P12" " 1056   " " 1011   " "  935   " " 1393   " " 1270   "
+[55] " 1186   " " 1153   " " 1092   " "  917   " "  853   " "  967   "
+[61] "  955P11" " 1530   " " 1175   " " 1163   "</code></pre>
+</div>
+</div>
+<p>Finally, I removed extra spaces and any additional text after the rating, then converted the values from text to numeric values so they could be used in calculations.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>pre_rating <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">"P.*"</span>, <span class="st">""</span>, <span class="fu">trimws</span>(pre_rating)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Then the pre_ratings were stored in the data frame.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>players<span class="sc">$</span>pre_rating <span class="ot">&lt;-</span> pre_rating</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>I then extracted the opponent pair numbers from each player’s seven rounds.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>rounds <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(first_lines, <span class="st">"</span><span class="sc">\\</span><span class="st">|"</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(rounds)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+ [1] "    1 "                            " GARY HUA                        "
+ [3] "6.0  "                             "W  39"                            
+ [5] "W  21"                             "W  18"                            
+ [7] "W  14"                             "W   7"                            
+ [9] "D  12"                             "D   4"                            
+
+[[2]]
+ [1] "    2 "                            " DAKSHESH DARURI                 "
+ [3] "6.0  "                             "W  63"                            
+ [5] "W  58"                             "L   4"                            
+ [7] "W  17"                             "W  16"                            
+ [9] "W  20"                             "W   7"                            
+
+[[3]]
+ [1] "    3 "                            " ADITYA BAJAJ                    "
+ [3] "6.0  "                             "L   8"                            
+ [5] "W  61"                             "W  25"                            
+ [7] "W  21"                             "W  11"                            
+ [9] "W  13"                             "W  12"                            
+
+[[4]]
+ [1] "    4 "                            " PATRICK H SCHILLING             "
+ [3] "5.5  "                             "W  23"                            
+ [5] "D  28"                             "W   2"                            
+ [7] "W  26"                             "D   5"                            
+ [9] "W  19"                             "D   1"                            
+
+[[5]]
+ [1] "    5 "                            " HANSHI ZUO                      "
+ [3] "5.5  "                             "W  45"                            
+ [5] "W  37"                             "D  12"                            
+ [7] "D  13"                             "D   4"                            
+ [9] "W  14"                             "W  17"                            
+
+[[6]]
+ [1] "    6 "                            " HANSEN SONG                     "
+ [3] "5.0  "                             "W  34"                            
+ [5] "D  29"                             "L  11"                            
+ [7] "W  35"                             "D  10"                            
+ [9] "W  27"                             "W  21"                            </code></pre>
+</div>
+</div>
+<p>I used lapply() to repeat the process for every player, removed the win/draw letters and extra spaces, and converted the opponent numbers to numeric values. These pair numbers will be used later to match each opponent with their pre-tournament rating.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>opponents <span class="ot">&lt;-</span> <span class="fu">lapply</span>(rounds, <span class="cf">function</span>(x) {</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">"[^0-9]"</span>, <span class="st">""</span>, x[<span class="dv">4</span><span class="sc">:</span><span class="dv">10</span>]))</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>I extracted each player’s pair or index number and added it to the data frame. The pair number is needed to match each player’s opponents to their pre-tournament ratings later.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>pair <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">trimws</span>(<span class="fu">sapply</span>(<span class="fu">strsplit</span>(first_lines, <span class="st">"</span><span class="sc">\\</span><span class="st">|"</span>), <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">1</span>)))</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(pair)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+[26] 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50
+[51] 51 52 53 54 55 56 57 58 59 60 61 62 63 64</code></pre>
+</div>
+</div>
+<p>Added new column to data frame.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>players<span class="sc">$</span>pair <span class="ot">&lt;-</span> pair</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Before calculating the average opponent rating for all players, I checked the calculation using the first player. I matched the opponent pair numbers to the corresponding pre-ratings and calculated their average. The result was 1605, which matched the value given in the project instructions.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(players<span class="sc">$</span>pre_rating[<span class="fu">match</span>(opponents[[<span class="dv">1</span>]], players<span class="sc">$</span>pair)]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1605</code></pre>
+</div>
+</div>
+<p>I then calculated the average pre-rating of the opponents for every player. For each player, I matched their opponent pair numbers to the corresponding pre-ratings and calculated the mean. I used na.rm = TRUE so that missing values would not affect the calculation.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>avg_opponent_rating <span class="ot">&lt;-</span> <span class="fu">sapply</span>(opponents, <span class="cf">function</span>(x) {</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  ratings <span class="ot">&lt;-</span> players<span class="sc">$</span>pre_rating[<span class="fu">match</span>(x, players<span class="sc">$</span>pair)]</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(ratings, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(avg_opponent_rating)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 1605.286 1469.286 1563.571 1573.571 1500.857 1518.714 1372.143 1468.429
+ [9] 1523.143 1554.143 1467.571 1506.167 1497.857 1515.000 1483.857 1385.800
+[17] 1498.571 1480.000 1426.286 1410.857 1470.429 1300.333 1213.857 1357.000
+[25] 1363.286 1506.857 1221.667 1522.143 1313.500 1144.143 1259.857 1378.714
+[33] 1276.857 1375.286 1149.714 1388.167 1384.800 1539.167 1429.571 1390.571
+[41] 1248.500 1149.857 1106.571 1327.000 1152.000 1357.714 1392.000 1355.800
+[49] 1285.800 1296.000 1356.143 1494.571 1345.333 1206.167 1406.000 1414.400
+[57] 1363.000 1391.000 1319.000 1330.200 1327.286 1186.000 1350.200 1263.000</code></pre>
+</div>
+</div>
+<p>Finally, I rounded the averages to whole numbers.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>avg_opponent_rating <span class="ot">&lt;-</span> <span class="fu">round</span>(avg_opponent_rating)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>After calculating the average opponent ratings, I added them to the players data frame. I then exported the completed data frame as a CSV file, which contains the five required columns for each player.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>players<span class="sc">$</span>avg_opponent_rating <span class="ot">&lt;-</span> avg_opponent_rating</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Export the final data frame as a CSV file</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(players, <span class="st">"tournament_results.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="conclusion" class="level3">
+<h3 class="anchored" data-anchor-id="conclusion">Conclusion</h3>
+<p>My approach to this project was to break the text file piece by piece and extract one column at a time, starting with the player names. Once I figured out how the information was structured, I used the same approach to extract the state, total points, pre-rating, and opponent numbers. I then used the opponent numbers to match each player with their opponents’ pre-ratings and calculate the average.</p>
+<p>I had learned about regular expressions before, but I did not expect to use them in this project. They ended up being helpful for identifying the lines I needed from the text file and extracting the information. I also learned new functions that allow to perform the same transformation for multiple lines in the file. This made it easier to turn the unstructured text file into a data frame and then export it as a CSV file.</p>
+</section>
+<section id="ai-assistance" class="level3">
+<h3 class="anchored" data-anchor-id="ai-assistance">AI Assistance</h3>
+<p>ChatGPT was used as a supplemental tool to help understand R syntax, troubleshoot code, and clarify the steps used to process the tournament data (OpenAI, 2026).</p>
+<p>OpenAI. (2026). ChatGPT [Generative AI chat]. <a href="https://chatgpt.com/" class="uri">https://chatgpt.com/</a></p>
 </section>
 </section>
 

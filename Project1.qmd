@@ -12,3 +12,184 @@ editor: visual
 ### Overview
 
 For Project 1, I started by examining the tournament results in the text file. The file contains unstructured data. My plan is to extract the player information, including Player’s Name, Player’s State, Total Number of Points, and Player’s Pre-Rating. Then, using the opponent numbers listed for each player, identify who they played and match those players to their pre-tournament ratings. I will use this information to calculate the average pre-rating of each player's opponents and combine everything into a data frame that can be exported as a CSV file.
+
+## Code Base Deliverable
+
+### Load library
+
+```{r}
+library(tidyverse)
+```
+
+Because I saw the unstructured txt file beforehand, I decided this was probably the better way to look into it using R
+
+```{r}
+lines <- readLines("tournamentinfo.txt")
+head(lines)
+```
+
+My approach with this file was to extract the information one piece at a time. I started with the player names by splitting each line at the \| symbol and taking the second piece, which contains the name.
+
+```{r}
+first_lines <- lines[grepl("^\\s*\\d+\\s*\\|", lines)]
+head(first_lines)
+```
+
+I then removed the extra spaces.
+
+```{r}
+name <- trimws(sapply(strsplit(first_lines, "\\|"), `[`, 2))
+print(name)
+```
+
+I stored the player names in a new data frame called players.
+
+```{r}
+players <- data.frame(name = name)
+```
+
+This way of isolating the values needed worked, so I will replicate for the other columns.
+
+```{r}
+head(players)
+```
+
+Next, I extracted the players' states. I used grepl() to identify the lines that start with a two-letter state abbreviation, such as ON or MI.
+
+```{r}
+second_lines <- lines[grepl("^\\s*[A-Z]{2}\\s*\\|", lines)]
+head(second_lines)
+```
+
+I then split those lines at the \| symbol and took the first piece to create the state column.
+
+```{r}
+state <- trimws(sapply(strsplit(second_lines, "\\|"), `[`, 1))
+print(state)
+```
+
+I stored the player states in a the data frame
+
+```{r}
+players$state <- state
+```
+
+I then extracted the total points for each player. I split each player line at the \| symbol and took the third piece, which contains the player's total points. I removed the extra spaces and converted the values from text to numbers.
+
+```{r}
+points <- as.numeric(trimws(sapply(strsplit(first_lines, "\\|"), `[`, 3)))
+print(points)
+```
+
+I stored the player points in a the data frame
+
+```{r}
+players$points <- points
+```
+
+I split each rating line at R:. This separates the information before the rating from the rating and post-tournament rating that comes after it.
+
+```{r}
+rating_parts <- strsplit(second_lines, "R:")
+head(rating_parts)
+```
+
+I used sapply() to take the second piece from each split line. This gives me the pre- and post-tournament ratings.
+
+```{r}
+pre_rating <- sapply(rating_parts, `[`, 2)
+head(pre_rating)
+```
+
+I then split the ratings at -\> and took the first piece, which is the player's pre-tournament rating.
+
+```{r}
+pre_rating <- sapply(strsplit(pre_rating, "->"), `[`, 1)
+print(pre_rating)
+```
+
+Finally, I removed extra spaces and any additional text after the rating, then converted the values from text to numeric values so they could be used in calculations.
+
+```{r}
+pre_rating <- as.numeric(sub("P.*", "", trimws(pre_rating)))
+```
+
+Then the pre_ratings were stored in the data frame.
+
+```{r}
+players$pre_rating <- pre_rating
+```
+
+I then extracted the opponent pair numbers from each player's seven rounds.
+
+```{r}
+rounds <- strsplit(first_lines, "\\|")
+head(rounds)
+```
+
+I used lapply() to repeat the process for every player, removed the win/draw letters and extra spaces, and converted the opponent numbers to numeric values. These pair numbers will be used later to match each opponent with their pre-tournament rating.
+
+```{r}
+opponents <- lapply(rounds, function(x) {
+  as.numeric(gsub("[^0-9]", "", x[4:10]))
+})
+```
+
+I extracted each player's pair or index number and added it to the data frame. The pair number is needed to match each player's opponents to their pre-tournament ratings later.
+
+```{r}
+pair <- as.numeric(trimws(sapply(strsplit(first_lines, "\\|"), `[`, 1)))
+print(pair)
+```
+
+Added new column to data frame.
+
+```{r}
+players$pair <- pair
+```
+
+Before calculating the average opponent rating for all players, I checked the calculation using the first player. I matched the opponent pair numbers to the corresponding pre-ratings and calculated their average. The result was 1605, which matched the value given in the project instructions.
+
+```{r}
+round(mean(players$pre_rating[match(opponents[[1]], players$pair)]))
+```
+
+I then calculated the average pre-rating of the opponents for every player. For each player, I matched their opponent pair numbers to the corresponding pre-ratings and calculated the mean. I used na.rm = TRUE so that missing values would not affect the calculation.
+
+```{r}
+avg_opponent_rating <- sapply(opponents, function(x) {
+  ratings <- players$pre_rating[match(x, players$pair)]
+  mean(ratings, na.rm = TRUE)
+})
+print(avg_opponent_rating)
+```
+
+Finally, I rounded the averages to whole numbers.
+
+```{r}
+avg_opponent_rating <- round(avg_opponent_rating)
+```
+
+After calculating the average opponent ratings, I added them to the players data frame. I then exported the completed data frame as a CSV file, which contains the five required columns for each player.
+
+```{r}
+players$avg_opponent_rating <- avg_opponent_rating
+```
+
+Export the final data frame as a CSV file
+
+```{r}
+write.csv(players, "tournament_results.csv", row.names = FALSE)
+```
+
+### Conclusion
+
+My approach to this project was to break the text file piece by piece and extract one column at a time, starting with the player names. Once I figured out how the information was structured, I used the same approach to extract the state, total points, pre-rating, and opponent numbers. I then used the opponent numbers to match each player with their opponents' pre-ratings and calculate the average.
+
+I had learned about regular expressions before, but I did not expect to use them in this project. They ended up being helpful for identifying the lines I needed from the text file and extracting the information. I also learned new functions that allow to perform the same transformation for multiple lines in the file. This made it easier to turn the unstructured text file into a data frame and then export it as a CSV file.
+
+### AI Assistance
+
+ChatGPT was used as a supplemental tool to help understand R syntax, troubleshoot code, and clarify the steps used to process the tournament data (OpenAI, 2026).
+
+OpenAI. (2026). ChatGPT \[Generative AI chat\]. <https://chatgpt.com/>
